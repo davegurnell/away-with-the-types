@@ -1,80 +1,77 @@
 package minimapper
 
-import cats.data.Validated
 import cats.implicits._
 import java.time.ZonedDateTime
 import scala.collection.immutable.ListMap
 
 trait FromData[A] {
-  def apply(data: Data): FromData.Result[A]
+  def apply(data: Data): Either[String, A]
 
   /**
    * Version of apply() that returns an Either,
    * for compatibility with Expr.eval and Data.get
    */
   def applyAsEither(data: Data): Either[String, A] =
-    apply(data).leftMap(_.mkString(", ")).toEither
+    apply(data).leftMap(_.mkString(", "))
 
   def map[B](func: A => B): FromData[B] =
     FromData.instance[B](data => this(data).map(func))
 }
 
 object FromData {
-  type Result[A] = Validated[List[String], A]
-
   def apply[A](implicit instance: FromData[A]): FromData[A] =
     instance
 
-  def instance[A](func: Data => Result[A]): FromData[A] =
+  def instance[A](func: Data => Either[String, A]): FromData[A] =
     new FromData[A] {
-      def apply(data: Data): Result[A] =
+      def apply(data: Data): Either[String, A] =
         func(data)
     }
 
   implicit val dataFromData: FromData[Data] =
-    instance(_.valid)
+    instance(Right(_))
 
   implicit val booleanFromData: FromData[Boolean] =
     instance {
       case BooleanData(bool) =>
-        Validated.valid(bool)
+        Right(bool)
       case value =>
-        Validated.invalid(List(s"invalid boolean: $value"))
+        Left(s"invalid boolean: $value")
     }
 
   implicit val intFromData: FromData[Int] =
     instance {
-      case IntData(num) => num.valid
-      case value        => List(s"invalid int: $value").invalid
+      case IntData(num) => Right(num)
+      case value        => Left(s"invalid int: $value")
     }
 
   implicit val doubleFromData: FromData[Double] =
     instance {
-      case DoubleData(num) => num.valid
-      case value           => List(s"invalid double: $value").invalid
+      case DoubleData(num) => Right(num)
+      case value           => Left(s"invalid double: $value")
     }
 
   implicit val stringFromData: FromData[String] =
     instance {
-      case StringData(str) => str.valid
-      case value           => List(s"invalid string: $value").invalid
+      case StringData(str) => Right(str)
+      case value           => Left(s"invalid string: $value")
     }
 
   implicit val timestampFromData: FromData[ZonedDateTime] =
     instance {
-      case TimestampData(dt) => dt.valid
-      case value             => List(s"invalid timestamp: $value").invalid
+      case TimestampData(dt) => Right(dt)
+      case value             => Left(s"invalid timestamp: $value")
     }
 
   implicit def listFromData[A](implicit aFromData: FromData[A]): FromData[List[A]] =
     instance {
-      case ListData(data) => data.traverse[Result, A](aFromData.apply)
-      case value          => List(s"invalid list: $value").invalid
+      case ListData(data) => data.traverse(aFromData.apply)
+      case value          => Left(s"invalid list: $value")
     }
 
   implicit def optionFromData[A](implicit aFromData: FromData[A]): FromData[Option[A]] =
     instance {
-      case NullData => None.valid
+      case NullData => Right(None)
       case data     => aFromData(data).map(Some(_))
     }
 }

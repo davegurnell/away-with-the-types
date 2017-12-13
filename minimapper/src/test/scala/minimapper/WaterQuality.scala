@@ -68,7 +68,7 @@ object Turbidity {
 
   implicit val turbidityFromData: FromData[Turbidity] =
     FromData.instance { data =>
-      data.typeName.andThen {
+      data.typeName.flatMap {
         case "QualitativeTurbidity" =>
           data.getAs[String]("description").map(QualitativeTurbidity.apply)
 

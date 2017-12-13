@@ -56,7 +56,7 @@ class ExprSpec extends FreeSpec with Matchers {
     "bad accessor" in {
       val expr     = dataAt("foo", "bam")
       val actual   = expr.evalAs[List[Int]](top)
-      val expected = Left(List("field not found: bam"))
+      val expected = Left("field not found: bam")
 
       actual should be(expected)
     }
@@ -64,7 +64,7 @@ class ExprSpec extends FreeSpec with Matchers {
     "bad data type" in {
       val expr     = dataAt("foo", "bar").combineAll
       val actual   = expr.evalAs[Int](top)
-      val expected = Left(List("invalid list: IntData(123)"))
+      val expected = Left("invalid list: IntData(123)")
 
       actual should be(expected)
     }
@@ -72,7 +72,7 @@ class ExprSpec extends FreeSpec with Matchers {
     "bad result type" in {
       val expr     = dataAt("foo", "baz").combineAll
       val actual   = expr.evalAs[String](top)
-      val expected = Left(List("invalid string: IntData(6)"))
+      val expected = Left("invalid string: IntData(6)")
 
       actual should be(expected)
     }

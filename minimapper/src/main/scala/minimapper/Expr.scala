@@ -1,6 +1,5 @@
 package minimapper
 
-import cats.data.Validated
 import cats.implicits._
 
 sealed abstract class Expr extends Product with Serializable
@@ -34,78 +33,218 @@ trait ExprConstructorMethods {
 }
 
 trait ExprEvalMethods {
-  type Result[A] = Either[List[String], A]
-
-  def eval(data: Data): Result[Data] =
+  def eval(data: Data): Either[String, Data] =
     this match {
-      case Select(path)      => data.get(path : _*).toEither
+      case Select(path)      => data.get(path : _*)
       case Const(data)       => Right(data)
       case Apply(func, args) => evalApply(func, args, data)
     }
 
-  def evalAs[A](data: Data)(implicit fromData: FromData[A]): Result[A] =
-    eval(data).flatMap(data => fromData(data).toEither)
+  def evalAs[A](data: Data)(implicit fromData: FromData[A]): Either[String, A] =
+    eval(data).flatMap(data => fromData(data))
 
-  private def evalApply(name: String, args: List[Expr], data: Data): Result[Data] =
+  private def evalApply(name: String, args: List[Expr], data: Data): Either[String, Data] =
     name match {
       case "unary_-" =>
-        arity1(args)(a => a.evalAs[Int](data).map(x => -x)) orElse
-        arity1(args)(a => a.evalAs[Double](data).map(x => -x))
+        arity1(args) { a =>
+          for {
+            x <- a.evalAs[Int](data)
+          } yield -x
+        } orElse
+        arity1(args) { a =>
+          for {
+            x <- a.evalAs[Double](data)
+          } yield -x
+        }
 
       case "+" =>
-        arity2(args)((a, b) => (a.evalAs[Int](data),    b.evalAs[Int](data)).mapN(_ + _)) orElse
-        arity2(args)((a, b) => (a.evalAs[Double](data), b.evalAs[Double](data)).mapN(_ + _)) orElse
-        arity2(args)((a, b) => (a.evalAs[String](data), b.evalAs[String](data)).mapN(_ + _))
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.evalAs[Int](data)
+            y <- b.evalAs[Int](data)
+          } yield x + y
+        } orElse
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.evalAs[Double](data)
+            y <- b.evalAs[Double](data)
+          } yield x + y
+        } orElse
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.evalAs[String](data)
+            y <- b.evalAs[String](data)
+          } yield x + y
+        }
 
       case "-" =>
-        arity2(args)((a, b) => (a.evalAs[Int](data),    b.evalAs[Int](data)).mapN(_ - _)) orElse
-        arity2(args)((a, b) => (a.evalAs[Double](data), b.evalAs[Double](data)).mapN(_ - _))
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.evalAs[Int](data)
+            y <- b.evalAs[Int](data)
+          } yield x - y
+        } orElse
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.evalAs[Double](data)
+            y <- b.evalAs[Double](data)
+          } yield x - y
+        }
 
       case "*" =>
-        arity2(args)((a, b) => (a.evalAs[Int](data),    b.evalAs[Int](data)).mapN(_ * _)) orElse
-        arity2(args)((a, b) => (a.evalAs[Double](data), b.evalAs[Double](data)).mapN(_ * _))
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.evalAs[Int](data)
+            y <- b.evalAs[Int](data)
+          } yield x * y
+        } orElse
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.evalAs[Double](data)
+            y <- b.evalAs[Double](data)
+          } yield x * y
+       }
 
       case "/" =>
-        arity2(args)((a, b) => (a.evalAs[Int](data),    b.evalAs[Int](data)).mapN(_ / _)) orElse
-        arity2(args)((a, b) => (a.evalAs[Double](data), b.evalAs[Double](data)).mapN(_ / _))
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.evalAs[Int](data)
+            y <- b.evalAs[Int](data)
+          } yield x / y
+        } orElse
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.evalAs[Double](data)
+            y <- b.evalAs[Double](data)
+          } yield x / y
+        }
 
       case ">" =>
-        arity2(args)((a, b) => (a.evalAs[Int](data),    b.evalAs[Int](data)).mapN(_ > _)) orElse
-        arity2(args)((a, b) => (a.evalAs[Double](data), b.evalAs[Double](data)).mapN(_ > _)) orElse
-        arity2(args)((a, b) => (a.evalAs[String](data), b.evalAs[String](data)).mapN(_ > _))
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.evalAs[Int](data)
+            y <- b.evalAs[Int](data)
+          } yield x > y
+        } orElse
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.evalAs[Double](data)
+            y <- b.evalAs[Double](data)
+          } yield x > y
+        } orElse
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.evalAs[String](data)
+            y <- b.evalAs[String](data)
+          } yield x > y
+        }
 
       case "<" =>
-        arity2(args)((a, b) => (a.evalAs[Int](data),    b.evalAs[Int](data)).mapN(_ < _)) orElse
-        arity2(args)((a, b) => (a.evalAs[Double](data), b.evalAs[Double](data)).mapN(_ < _)) orElse
-        arity2(args)((a, b) => (a.evalAs[String](data), b.evalAs[String](data)).mapN(_ < _))
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.evalAs[Int](data)
+            y <- b.evalAs[Int](data)
+          } yield x < y
+        } orElse
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.evalAs[Double](data)
+            y <- b.evalAs[Double](data)
+          } yield x < y
+        } orElse
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.evalAs[String](data)
+            y <- b.evalAs[String](data)
+          } yield x < y
+        }
 
       case ">=" =>
-        arity2(args)((a, b) => (a.evalAs[Int](data),    b.evalAs[Int](data)).mapN(_ >= _)) orElse
-        arity2(args)((a, b) => (a.evalAs[Double](data), b.evalAs[Double](data)).mapN(_ >= _)) orElse
-        arity2(args)((a, b) => (a.evalAs[String](data), b.evalAs[String](data)).mapN(_ >= _))
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.evalAs[Int](data)
+            y <- b.evalAs[Int](data)
+          } yield x >= y
+        } orElse
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.evalAs[Double](data)
+            y <- b.evalAs[Double](data)
+          } yield x >= y
+        } orElse
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.evalAs[String](data)
+            y <- b.evalAs[String](data)
+          } yield x >= y
+        }
 
       case "<=" =>
-        arity2(args)((a, b) => (a.evalAs[Int](data),    b.evalAs[Int](data)).mapN(_ <= _)) orElse
-        arity2(args)((a, b) => (a.evalAs[Double](data), b.evalAs[Double](data)).mapN(_ <= _)) orElse
-        arity2(args)((a, b) => (a.evalAs[String](data), b.evalAs[String](data)).mapN(_ <= _))
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.evalAs[Int](data)
+            y <- b.evalAs[Int](data)
+          } yield x <= y
+        } orElse
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.evalAs[Double](data)
+            y <- b.evalAs[Double](data)
+          } yield x <= y
+        } orElse
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.evalAs[String](data)
+            y <- b.evalAs[String](data)
+          } yield x <= y
+        }
 
       case "===" =>
-        arity2(args)((a, b) => (a.eval(data), b.eval(data)).mapN(_ == _))
+        arity2(args) { (a, b) =>
+          for {
+            x <- a.eval(data)
+            y <- b.eval(data)
+          } yield x == y
+        }
 
       case "=!=" =>
-        arity2(args)((a, b) => (b.eval(data), b.eval(data)).mapN(_ != _))
+        arity2(args) { (a, b) =>
+          for {
+            x <- b.eval(data)
+            y <- b.eval(data)
+          } yield x != y
+        }
 
       case "unary_!" =>
-        arity1(args)(a => a.evalAs[Boolean](data).map(x => !x))
+        arity1(args) { a =>
+          for {
+            x <- a.evalAs[Boolean](data)
+          } yield !x
+        }
 
       case "&&" =>
-        arity2[Boolean](args)((a, b) => (a.evalAs[Boolean](data), b.evalAs[Boolean](data)).mapN(_ && _))
+        arity2[Boolean](args) { (a, b) =>
+          for {
+            x <- a.evalAs[Boolean](data)
+            y <- b.evalAs[Boolean](data)
+          } yield x && y
+        }
 
       case "||" =>
-        arity2[Boolean](args)((a, b) => (a.evalAs[Boolean](data), b.evalAs[Boolean](data)).mapN(_ || _))
+        arity2[Boolean](args) { (a, b) =>
+          for {
+            x <- a.evalAs[Boolean](data)
+            y <- b.evalAs[Boolean](data)
+          } yield x || y
+        }
 
       case "++" =>
-        arity2[List[Data]](args)((a, b) => (a.evalAs[List[Data]](data), b.evalAs[List[Data]](data)).mapN(_ ++ _))
+        arity2[List[Data]](args) { (a, b) =>
+          for {
+            x <- a.evalAs[List[Data]](data)
+            y <- b.evalAs[List[Data]](data)
+          } yield x ++ y
+        }
 
       case "getOrElse" =>
         arity2(args) { (a, b) =>
@@ -116,34 +255,46 @@ trait ExprEvalMethods {
         }
 
       case "combineAll" =>
-        arity1(args)(a => a.evalAs[List[Int]](data).map(_.sum)) orElse
-        arity1(args)(a => a.evalAs[List[Double]](data).map(_.sum)) orElse
-        arity1(args)(a => a.evalAs[List[String]](data).map(_.mkString))
+        arity1(args) { a =>
+          for {
+            x <- a.evalAs[List[Int]](data)
+          } yield x.sum
+        } orElse
+        arity1(args) { a =>
+          for {
+            x <- a.evalAs[List[Double]](data)
+          } yield x.sum
+        } orElse
+        arity1(args) { a =>
+          for {
+            x <- a.evalAs[List[String]](data)
+          } yield x.mkString
+        }
 
       case other =>
-        Left(List(s"unknown method: $other"))
+        Left(s"unknown method: $other")
     }
 
-  private def arity1[R](args: List[Expr])(func: Expr => Result[R])(implicit toData: ToData[R]): Result[Data] =
+  private def arity1[R](args: List[Expr])(func: Expr => Either[String, R])(implicit toData: ToData[R]): Either[String, Data] =
     args match {
       case a :: Nil => func(a).map(toData.apply)
       case _        => arityMismatch(1)
     }
 
-  private def arity2[R](args: List[Expr])(func: (Expr, Expr) => Result[R])(implicit toData: ToData[R]): Result[Data] =
+  private def arity2[R](args: List[Expr])(func: (Expr, Expr) => Either[String, R])(implicit toData: ToData[R]): Either[String, Data] =
     args match {
       case a :: b :: Nil => func(a, b).map(toData.apply)
       case _             => arityMismatch(2)
     }
 
-  private def arity3[R](args: List[Expr])(func: (Expr, Expr, Expr) => Result[R])(implicit toData: ToData[R]): Result[Data] =
+  private def arity3[R](args: List[Expr])(func: (Expr, Expr, Expr) => Either[String, R])(implicit toData: ToData[R]): Either[String, Data] =
     args match {
       case a :: b :: c :: Nil => func(a, b, c).map(toData.apply)
       case _                  => arityMismatch(3)
     }
 
-  private def arityMismatch(arity: Int): Result[Data] =
-    Left(List(s"arity mismatch: $arity"))
+  private def arityMismatch(arity: Int): Either[String, Data] =
+    Left(s"arity mismatch: $arity")
 }
 
 trait ExprSyntax {

@@ -1,44 +1,41 @@
 package minimapper
 
-import cats.data.Validated
 import cats.syntax.option._
 import java.time.ZonedDateTime
 import scala.collection.immutable.ListMap
 
 sealed abstract class Data extends Product with Serializable {
-  type Result[A] = Validated[List[String], A]
-
-  def get(path: String *): Result[Data] = {
-    def loop(path: List[String], data: Result[Data]): Result[Data] =
-      data.andThen { data =>
+  def get(path: String *): Either[String, Data] = {
+    def loop(path: List[String], data: Either[String, Data]): Either[String, Data] =
+      data.flatMap { data =>
         (path, data) match {
           case (Nil, data) =>
-            Validated.valid(data)
+            Right(data)
 
           case (field :: rest, ProductData(values)) =>
-            loop(rest, values.get(field).toValid(List(s"field not found: $field")))
+            loop(rest, values.get(field).toRight(s"field not found: $field"))
 
           case (path, SumData(_, value)) =>
-            loop(path, Validated.valid(value))
+            loop(path, Right(value))
 
           case (field :: rest, _) =>
-            Validated.invalid(List(s"field not found: $field"))
+            Left(s"field not found: $field")
         }
       }
 
-    loop(path.toList, Validated.valid(this))
+    loop(path.toList, Right(this))
   }
 
-  def as[A](implicit fromData: FromData[A]): FromData.Result[A] =
+  def as[A](implicit fromData: FromData[A]): Either[String, A] =
     fromData(this)
 
-  def getAs[A](path: String *)(implicit fromData: FromData[A]): FromData.Result[A] =
-    get(path : _*).andThen(_.as[A])
+  def getAs[A](path: String *)(implicit fromData: FromData[A]): Either[String, A] =
+    get(path : _*).flatMap(_.as[A])
 
-  def typeName: FromData.Result[String] =
+  def typeName: Either[String, String] =
     this match {
-      case SumData(tpe, _) => Validated.valid(tpe)
-      case _ => Validated.invalid(List("type name not found"))
+      case SumData(tpe, _) => Right(tpe)
+      case _ => Left("type name not found")
     }
 }
 

@@ -1,6 +1,5 @@
 package minimapper
 
-import cats.data.Validated
 import java.time.ZonedDateTime
 import org.scalacheck._
 import org.scalatest._
@@ -27,11 +26,11 @@ class ToFromDataSpec extends FreeSpec with Matchers with GeneratorDrivenProperty
       val data = toData(value)
       val copy = fromData(data)
       schema.typeCheck(data) should be(Nil)
-      copy should be(Validated.valid(value))
+      copy should be(Right(value))
     }
 
     forAll(genDataFromSchema(schema)) { (data: Data) =>
-      val Validated.Valid(value) = fromData(data)
+      val Right(value) = fromData(data)
       val copy = toData(value)
       schema.typeCheck(copy) should be(Nil)
     }
