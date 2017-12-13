@@ -7,7 +7,7 @@ sealed abstract class Expr extends Product with Serializable
   with ExprConstructorMethods
   with ExprEvalMethods
 
-final case class Select(path: List[PathSegment]) extends Expr
+final case class Select(path: List[String]) extends Expr
 final case class Const(data: Data) extends Expr
 final case class Apply(func: String, args: List[Expr]) extends Expr
 
@@ -151,7 +151,7 @@ trait ExprSyntax {
 
   import scala.language.implicitConversions
 
-  def dataAt(path: PathSegment *): Select =
+  def dataAt(path: String *): Select =
     Select(path.toList)
 
   implicit class ExprOps[A](value: A) {

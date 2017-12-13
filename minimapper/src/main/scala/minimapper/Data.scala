@@ -46,27 +46,21 @@ trait DataMethods {
 
   type GetResult[A] = Either[String, A]
 
-  def get(path: PathSegment *): GetResult[Data] = {
-    def loop(path: List[PathSegment], data: GetResult[Data]): GetResult[Data] =
+  def get(path: String *): GetResult[Data] = {
+    def loop(path: List[String], data: GetResult[Data]): GetResult[Data] =
       data.flatMap { data =>
         (path, data) match {
           case (Nil, data) =>
             Right(data)
 
-          case (Field(field) :: rest, ProductData(values)) =>
+          case (field :: rest, ProductData(values)) =>
             loop(rest, values.get(field).toRight(s"field not found: $field"))
-
-          case (Index(index) :: rest, ListData(values)) =>
-            loop(rest, values.lift(index).toRight(s"index not found: $index"))
 
           case (path, SumData(_, value)) =>
             loop(path, Right(value))
 
-          case (Field(field) :: rest, _) =>
+          case (field :: rest, _) =>
             Left(s"field not found: $field")
-
-          case (Index(index) :: rest, _) =>
-            Left(s"index not found: $index")
         }
       }
 
@@ -76,6 +70,6 @@ trait DataMethods {
   def as[A](implicit fromData: FromData[A]): GetResult[A] =
     fromData(this).leftMap(_.head).toEither
 
-  def getAs[A](path: PathSegment *)(implicit fromData: FromData[A]): GetResult[A] =
+  def getAs[A](path: String *)(implicit fromData: FromData[A]): GetResult[A] =
     get(path : _*).flatMap(_.as[A])
 }
