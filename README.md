@@ -2,7 +2,7 @@
 
 &copy; 2017 Dave Gurnell.
 
-Slides licensed [CC-BY-3.0][].
+Slides licensed [CC-BY-SA-3.0][].
 
 Code samples licensed [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0).
 
