@@ -11,9 +11,7 @@ import org.scalatest.prop.GeneratorDrivenPropertyChecks
 class JsonSpec extends FreeSpec with Matchers with GeneratorDrivenPropertyChecks {
   import syntax._
   import JsonCodecs._
-  import JavaTimeGenerators._
-  import ScalaFixtures._
-  import SchemaFixtures._
+  import Generators._
 
   "Simple Scala values can be serialized to JSON directly or via Data objects" - {
     def check[A](implicit arbitrary: Arbitrary[A], toData: ToData[A], encoder: Encoder[A]) =
@@ -52,9 +50,9 @@ class JsonSpec extends FreeSpec with Matchers with GeneratorDrivenPropertyChecks
     "ZonedDateTime" in { check[ZonedDateTime](TimestampSchema)             }
     "List[Int]"     in { check[List[Int]](ListSchema(IntSchema))           }
     "Option[Int]"   in { check[Option[String]](OptionSchema(StringSchema)) }
-    "Location"      in { check[Location](LocationSchema)                   }
-    "Turbidity"     in { check[Turbidity](TurbiditySchema)                 }
-    "WaterQuality"  in { check[WaterQuality](WaterQualitySchema)           }
+    "Location"      in { check[Location](Location.schema)                   }
+    "Turbidity"     in { check[Turbidity](Turbidity.schema)                 }
+    "WaterQuality"  in { check[WaterQuality](WaterQuality.schema)           }
   }
 
 }

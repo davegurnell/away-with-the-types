@@ -7,9 +7,7 @@ import org.scalatest._
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 
 class ToFromDataSpec extends FreeSpec with Matchers with GeneratorDrivenPropertyChecks {
-  import JavaTimeGenerators._
-  import ScalaFixtures._
-  import SchemaFixtures._
+  import Generators._
 
   "Check equivalence between Scala ADTs and schema instances" - {
     "Boolean"                  in { check[Boolean](BooleanSchema) }
@@ -19,9 +17,9 @@ class ToFromDataSpec extends FreeSpec with Matchers with GeneratorDrivenProperty
     "ZonedDateTime"            in { check[ZonedDateTime](TimestampSchema) }
     "List[Int]"                in { check[List[Int]](ListSchema(IntSchema)) }
     "Option[String]"           in { check[Option[String]](OptionSchema(StringSchema)) }
-    "Location"                 in { check[Location](LocationSchema) }
-    "Turbidity"                in { check[Turbidity](TurbiditySchema) }
-    "WaterQuality"             in { check[WaterQuality](WaterQualitySchema) }
+    "Location"                 in { check[Location](Location.schema) }
+    "Turbidity"                in { check[Turbidity](Turbidity.schema) }
+    "WaterQuality"             in { check[WaterQuality](WaterQuality.schema) }
   }
 
   def check[A](schema: Schema)(implicit toData: ToData[A], fromData: FromData[A], arb: Arbitrary[A]) = {

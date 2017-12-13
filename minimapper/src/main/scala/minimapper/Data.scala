@@ -5,7 +5,42 @@ import cats.syntax.option._
 import java.time.ZonedDateTime
 import scala.collection.immutable.ListMap
 
-sealed abstract class Data extends Product with Serializable with DataMethods
+sealed abstract class Data extends Product with Serializable {
+  type Result[A] = Validated[List[String], A]
+
+  def get(path: String *): Result[Data] = {
+    def loop(path: List[String], data: Result[Data]): Result[Data] =
+      data.andThen { data =>
+        (path, data) match {
+          case (Nil, data) =>
+            Validated.valid(data)
+
+          case (field :: rest, ProductData(values)) =>
+            loop(rest, values.get(field).toValid(List(s"field not found: $field")))
+
+          case (path, SumData(_, value)) =>
+            loop(path, Validated.valid(value))
+
+          case (field :: rest, _) =>
+            Validated.invalid(List(s"field not found: $field"))
+        }
+      }
+
+    loop(path.toList, Validated.valid(this))
+  }
+
+  def as[A](implicit fromData: FromData[A]): FromData.Result[A] =
+    fromData(this)
+
+  def getAs[A](path: String *)(implicit fromData: FromData[A]): FromData.Result[A] =
+    get(path : _*).andThen(_.as[A])
+
+  def typeName: FromData.Result[String] =
+    this match {
+      case SumData(tpe, _) => Validated.valid(tpe)
+      case _ => Validated.invalid(List("type name not found"))
+    }
+}
 
 /**
  * A substitute for case classes.
@@ -30,46 +65,3 @@ case class TimestampData(value: ZonedDateTime) extends Data
 
 case class ListData(values: List[Data]) extends Data
 case object NullData extends Data
-
-
-
-// ----------------------------------------------
-
-
-
-// These are methods on Data objects.
-// I've extracted them into a trait
-// to make the type hierarchy above clearer.
-
-trait DataMethods {
-  self: Data =>
-
-  type GetResult[A] = Either[String, A]
-
-  def get(path: String *): GetResult[Data] = {
-    def loop(path: List[String], data: GetResult[Data]): GetResult[Data] =
-      data.flatMap { data =>
-        (path, data) match {
-          case (Nil, data) =>
-            Right(data)
-
-          case (field :: rest, ProductData(values)) =>
-            loop(rest, values.get(field).toRight(s"field not found: $field"))
-
-          case (path, SumData(_, value)) =>
-            loop(path, Right(value))
-
-          case (field :: rest, _) =>
-            Left(s"field not found: $field")
-        }
-      }
-
-    loop(path.toList, Right(this))
-  }
-
-  def as[A](implicit fromData: FromData[A]): GetResult[A] =
-    fromData(this).leftMap(_.head).toEither
-
-  def getAs[A](path: String *)(implicit fromData: FromData[A]): GetResult[A] =
-    get(path : _*).flatMap(_.as[A])
-}

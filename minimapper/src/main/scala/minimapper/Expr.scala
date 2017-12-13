@@ -34,17 +34,17 @@ trait ExprConstructorMethods {
 }
 
 trait ExprEvalMethods {
-  type Result[A] = Either[String, A]
+  type Result[A] = Either[List[String], A]
 
   def eval(data: Data): Result[Data] =
     this match {
-      case Select(path)      => data.get(path : _*)
+      case Select(path)      => data.get(path : _*).toEither
       case Const(data)       => Right(data)
       case Apply(func, args) => evalApply(func, args, data)
     }
 
   def evalAs[A](data: Data)(implicit fromData: FromData[A]): Result[A] =
-    eval(data).flatMap(fromData.applyAsEither)
+    eval(data).flatMap(data => fromData(data).toEither)
 
   private def evalApply(name: String, args: List[Expr], data: Data): Result[Data] =
     name match {
@@ -121,7 +121,7 @@ trait ExprEvalMethods {
         arity1(args)(a => a.evalAs[List[String]](data).map(_.mkString))
 
       case other =>
-        Left(s"unknown method: $other")
+        Left(List(s"unknown method: $other"))
     }
 
   private def arity1[R](args: List[Expr])(func: Expr => Result[R])(implicit toData: ToData[R]): Result[Data] =
@@ -143,7 +143,7 @@ trait ExprEvalMethods {
     }
 
   private def arityMismatch(arity: Int): Result[Data] =
-    Left(s"arity mismatch: $arity")
+    Left(List(s"arity mismatch: $arity"))
 }
 
 trait ExprSyntax {
