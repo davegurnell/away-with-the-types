@@ -1,6 +1,8 @@
 package minimapper
 
-import cats.implicits._
+import cats.instances.either._ // Applicative for Either
+import cats.instances.list._   // Traverse for List
+import cats.syntax.traverse._  // traverse for Either
 import io.circe._
 import io.circe.generic.semiauto._
 import io.circe.syntax._

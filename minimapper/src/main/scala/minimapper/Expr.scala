@@ -1,6 +1,9 @@
 package minimapper
 
-import cats.implicits._
+import cats.instances.either._ // Applicative for Either
+import cats.instances.list._   // Traverse for List
+import cats.syntax.either._    // orElse for Either
+import cats.syntax.traverse._  // traverse for Either
 
 sealed abstract class Expr extends Product with Serializable
   with ExprConstructorMethods

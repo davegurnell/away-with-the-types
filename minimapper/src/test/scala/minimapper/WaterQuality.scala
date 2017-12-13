@@ -1,6 +1,5 @@
 package minimapper
 
-import cats.implicits._
 import java.time.ZonedDateTime
 import minimapper.syntax._
 import minimapper.Generators._
@@ -25,10 +24,10 @@ object Location {
 
   implicit val locationFromData: FromData[Location] =
     FromData.instance { data =>
-      (
-        data.getAs[Double]("lat"),
-        data.getAs[Double]("lng"),
-      ).mapN(Location.apply)
+      for {
+        lat <- data.getAs[Double]("lat")
+        lng <- data.getAs[Double]("lng")
+      } yield Location(lat, lng)
     }
 
   implicit val arbitraryLocation: Arbitrary[Location] =
@@ -119,14 +118,21 @@ object WaterQuality {
 
   implicit val waterQualityFromData: FromData[WaterQuality] =
     FromData.instance { data =>
-      (
-        data.getAs[Location]("location"),
-        data.getAs[ZonedDateTime]("timestamp"),
-        data.getAs[String]("river"),
-        data.getAs[Double]("temperature"),
-        data.getAs[Option[Double]]("ph"),
-        data.getAs[Turbidity]("turbidity")
-      ).mapN(WaterQuality.apply)
+      for {
+        location    <- data.getAs[Location]("location")
+        timestamp   <- data.getAs[ZonedDateTime]("timestamp")
+        river       <- data.getAs[String]("river")
+        temperature <- data.getAs[Double]("temperature")
+        ph          <- data.getAs[Option[Double]]("ph")
+        turbidity   <- data.getAs[Turbidity]("turbidity")
+      } yield WaterQuality(
+        location    = location,
+        timestamp   = timestamp,
+        river       = river,
+        temperature = temperature,
+        ph          = ph,
+        turbidity   = turbidity
+      )
     }
 
   implicit val arbitraryWaterQuality: Arbitrary[WaterQuality] =

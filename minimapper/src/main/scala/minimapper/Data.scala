@@ -1,6 +1,5 @@
 package minimapper
 
-import cats.syntax.option._
 import java.time.ZonedDateTime
 import scala.collection.immutable.ListMap
 
